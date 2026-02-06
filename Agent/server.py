@@ -300,6 +300,21 @@ async def generate_report():
     return StreamingResponse(_stream(), media_type="text/event-stream")
 
 
+# ── Serve the built Vite frontend (production) ──────────────────────
+# In the Docker image the UI is built to /app/static.
+# Defined AFTER all /api routes so they take priority.
+_static_dir = Path(__file__).resolve().parent / "static"
+if _static_dir.is_dir():
+    from fastapi.responses import FileResponse
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        """Serve static files; fall back to index.html for SPA routing."""
+        file_path = _static_dir / full_path
+        if full_path and file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(_static_dir / "index.html")
+
 # Allow ``python server.py`` to start the server directly
 if __name__ == "__main__":
     import uvicorn

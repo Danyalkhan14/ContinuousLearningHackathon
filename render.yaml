@@ -30,9 +30,3 @@ services:
         value: "16384"
       - key: LLM_REASONING_EFFORT
         value: low
-      - key: DATA_DIR
-        value: /data
-    disk:
-      name: clinirepgen-data
-      mountPath: /data
-      sizeGB: 1

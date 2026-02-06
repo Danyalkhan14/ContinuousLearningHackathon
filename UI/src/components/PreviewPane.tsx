@@ -3,6 +3,7 @@ import katex from 'katex';
 
 interface PreviewPaneProps {
   latex: string;
+  width?: number;
 }
 
 // Simple extraction of sections and text from LaTeX for preview (no full parser)
@@ -65,7 +66,7 @@ function renderWithMath(text: string): string {
   return out;
 }
 
-export default function PreviewPane({ latex }: PreviewPaneProps) {
+export default function PreviewPane({ latex, width }: PreviewPaneProps) {
   const [compiling, setCompiling] = useState(true);
   const [previewHtml, setPreviewHtml] = useState<{ title?: string; sections: { title: string; content: string }[] }>({
     sections: [],
@@ -82,7 +83,7 @@ export default function PreviewPane({ latex }: PreviewPaneProps) {
   }, [latex]);
 
   return (
-    <div className="preview-pane">
+    <div className="preview-pane" style={width ? { width, minWidth: width } : undefined}>
       <div className="preview-header">
         <span className={compiling ? 'compiling' : ''}>{compiling ? 'Compiling...' : '01 of 01'}</span>
         <div className="preview-header-actions">

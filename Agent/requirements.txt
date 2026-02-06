@@ -1,0 +1,28 @@
+# Core LLM
+openai>=1.0.0
+
+# Vector store (pinned to match Qdrant server 1.12.x on Akash)
+qdrant-client>=1.12.0,<1.14.0
+
+# LangGraph agent framework
+langchain-core>=0.3.0
+langgraph>=0.2.0
+langchain-openai>=0.3.0
+langchain-community>=0.3.0
+langchain-text-splitters>=0.3.0
+
+# Configuration
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+
+# Document loading (mixed formats)
+pymupdf>=1.25.0
+python-docx>=1.0.0
+
+# You.com search (via langchain-community YouSearchAPIWrapper — no extra package needed)
+
+# FastAPI server
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+python-multipart>=0.0.18

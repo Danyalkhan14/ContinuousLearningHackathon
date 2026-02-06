@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 const ToolsIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -12,6 +12,14 @@ const GridIcon = () => (
     <rect x="9" y="2" width="5" height="5" rx="0.5" />
     <rect x="2" y="9" width="5" height="5" rx="0.5" />
     <rect x="9" y="9" width="5" height="5" rx="0.5" />
+  </svg>
+);
+
+const UploadIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M2 10v3a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3" />
+    <path d="M8 2v8" />
+    <path d="M5 5l3-3 3 3" />
   </svg>
 );
 
@@ -67,6 +75,59 @@ interface EditorPaneProps {
 
 export default function EditorPane({ value, onChange }: EditorPaneProps) {
   const [aiQuery, setAiQuery] = useState('');
+  const [fileName, setFileName] = useState('main.tex');
+  const [draggingOver, setDraggingOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  /* ── Read a text file and load it into the editor ──────────────── */
+  const loadFile = useCallback(
+    (file: File) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          onChange(reader.result);
+          setFileName(file.name);
+        }
+      };
+      reader.readAsText(file);
+    },
+    [onChange],
+  );
+
+  /* ── Hidden file input handler ─────────────────────────────────── */
+  const onFileSelected = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) loadFile(file);
+      // Reset so the same file can be re-selected
+      e.target.value = '';
+    },
+    [loadFile],
+  );
+
+  /* ── Drag & drop handlers ──────────────────────────────────────── */
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggingOver(true);
+  }, []);
+
+  const onDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggingOver(false);
+  }, []);
+
+  const onDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDraggingOver(false);
+      const file = e.dataTransfer.files?.[0];
+      if (file) loadFile(file);
+    },
+    [loadFile],
+  );
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -75,21 +136,52 @@ export default function EditorPane({ value, onChange }: EditorPaneProps) {
       // Placeholder: in a full app this would call an API
       setAiQuery('');
     },
-    [aiQuery]
+    [aiQuery],
   );
 
   return (
-    <div className="editor-pane">
+    <div
+      className={`editor-pane${draggingOver ? ' editor-drag-over' : ''}`}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
+      {/* Drop overlay */}
+      {draggingOver && (
+        <div className="editor-drop-overlay">
+          <span>Drop file to open</span>
+        </div>
+      )}
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".tex,.txt,.md,.csv,.json,.xml"
+        style={{ display: 'none' }}
+        onChange={onFileSelected}
+      />
+
       <div className="editor-toolbar">
         <button type="button" title="Tools">
           <ToolsIcon />
         </button>
         <div className="editor-tabs">
           <button type="button" className="editor-tab active">
-            main.tex
+            {fileName}
           </button>
         </div>
-        <button type="button" title="Layout" style={{ marginLeft: 'auto' }}>
+        <button
+          type="button"
+          title="Open file"
+          className="editor-open-btn"
+          onClick={() => fileInputRef.current?.click()}
+          style={{ marginLeft: 'auto' }}
+        >
+          <UploadIcon />
+          <span>Open</span>
+        </button>
+        <button type="button" title="Layout">
           <GridIcon />
         </button>
       </div>
@@ -98,7 +190,7 @@ export default function EditorPane({ value, onChange }: EditorPaneProps) {
           className="editor-code"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Write your LaTeX here..."
+          placeholder="Write your LaTeX here, or drag & drop a .tex file..."
           spellCheck={false}
         />
         <div className="ai-input-wrap">

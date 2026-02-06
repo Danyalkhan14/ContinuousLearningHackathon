@@ -78,6 +78,7 @@ export default function EditorPane({ value, onChange }: EditorPaneProps) {
   const [fileName, setFileName] = useState('main.tex');
   const [draggingOver, setDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   /* ── Read a text file and load it into the editor ──────────────── */
   const loadFile = useCallback(
@@ -87,6 +88,14 @@ export default function EditorPane({ value, onChange }: EditorPaneProps) {
         if (typeof reader.result === 'string') {
           onChange(reader.result);
           setFileName(file.name);
+          // Scroll the textarea to the top so the new content is visible
+          requestAnimationFrame(() => {
+            if (textareaRef.current) {
+              textareaRef.current.scrollTop = 0;
+              textareaRef.current.setSelectionRange(0, 0);
+              textareaRef.current.focus();
+            }
+          });
         }
       };
       reader.readAsText(file);
@@ -187,6 +196,7 @@ export default function EditorPane({ value, onChange }: EditorPaneProps) {
       </div>
       <div className="editor-area">
         <textarea
+          ref={textareaRef}
           className="editor-code"
           value={value}
           onChange={(e) => onChange(e.target.value)}

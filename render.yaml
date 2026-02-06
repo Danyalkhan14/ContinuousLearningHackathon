@@ -1,0 +1,38 @@
+# Render Blueprint – CliniRepGen
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: clinirepgen
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: standard
+    region: oregon
+    healthCheckPath: /api/health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: QDRANT_COLLECTION_NAME
+        value: clinical_trial_docs
+      - key: YDC_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        value: gpt-5.2
+      - key: EMBEDDING_MODEL
+        value: text-embedding-3-large
+      - key: EMBEDDING_DIMENSIONS
+        value: "3072"
+      - key: LLM_MAX_COMPLETION_TOKENS
+        value: "16384"
+      - key: LLM_REASONING_EFFORT
+        value: low
+      - key: DATA_DIR
+        value: /data
+    disk:
+      name: clinirepgen-data
+      mountPath: /data
+      sizeGB: 1

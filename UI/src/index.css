@@ -504,31 +504,51 @@ body {
 .preview-content {
   flex: 1;
   overflow: auto;
-  padding: 24px;
-  background: #2d2d2d;
-  color: #e6edf3;
+  padding: 24px 32px;
+  background: #ffffff;
+  color: #1a1a1a;
   font-size: 14px;
   line-height: 1.6;
 }
 
-.preview-content .doc-title {
-  font-size: 1.5em;
-  font-weight: 600;
-  margin-bottom: 1em;
+/* LaTeX.js rendered output styling */
+.preview-content .body {
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
 }
 
-.preview-content .doc-section {
-  font-size: 1.1em;
-  font-weight: 600;
-  margin: 1.2em 0 0.5em 0;
+.preview-content h1,
+.preview-content h2,
+.preview-content h3,
+.preview-content h4 {
+  color: #1a1a1a;
 }
 
 .preview-content p {
   margin: 0 0 0.75em 0;
 }
 
-.preview-content .katex {
-  font-size: 1.1em;
+.preview-content table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 13px;
+}
+
+.preview-content td,
+.preview-content th {
+  border: 1px solid #ccc;
+  padding: 4px 8px;
+}
+
+.preview-error {
+  padding: 8px 12px;
+  background: rgba(248, 81, 73, 0.1);
+  border-top: 1px solid #f85149;
+  color: #f85149;
+  font-size: 12px;
+  max-height: 80px;
+  overflow: auto;
 }
 
 .compiling {

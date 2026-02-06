@@ -541,6 +541,33 @@ body {
   padding: 4px 8px;
 }
 
+/* Fallback renderer: lists and inline formatting */
+.preview-content ul,
+.preview-content ol {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.preview-content li {
+  margin-bottom: 0.4em;
+}
+
+.preview-content blockquote {
+  margin: 0.75em 0 0.75em 1.5em;
+  padding-left: 1em;
+  border-left: 3px solid #ccc;
+  color: #444;
+}
+
+.preview-content figure {
+  margin: 1em 0;
+}
+
+.preview-content h5 {
+  font-size: 1em;
+  margin: 1em 0 0.25em;
+}
+
 .preview-error {
   padding: 8px 12px;
   background: rgba(248, 81, 73, 0.1);

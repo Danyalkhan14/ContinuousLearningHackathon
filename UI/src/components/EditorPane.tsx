@@ -45,8 +45,6 @@ const SendIcon = () => (
 
 const DEFAULT_LATEX = [
   '\\documentclass{article}',
-  '\\usepackage{geometry,amsmath,graphicx}',
-  '\\setlength{\\parskip}{0.5em}',
   '\\begin{document}',
   '',
   '\\section*{What is CliniRepGen?}',

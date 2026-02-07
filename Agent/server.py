@@ -88,6 +88,16 @@ class GenerateResult(BaseModel):
     items_processed: int
 
 
+class ChatRequest(BaseModel):
+    message: str
+    latex: str
+
+
+class ChatResponse(BaseModel):
+    reply: str
+    latex: str
+
+
 # ── Helpers ──────────────────────────────────────────────────────────
 
 # Extensions we can treat as plain text (covers what the UI sends)
@@ -298,6 +308,74 @@ async def generate_report():
             yield _sse({"type": "error", "message": str(exc)})
 
     return StreamingResponse(_stream(), media_type="text/event-stream")
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat(body: ChatRequest):
+    """
+    Accept a user message together with the current LaTeX source and return
+    an AI-generated reply plus an (optionally) updated LaTeX document.
+
+    The LLM is instructed to return JSON with two keys:
+      - ``reply``:  a short natural-language answer / explanation
+      - ``latex``:  the full updated LaTeX source (or the original if no
+                    changes were requested)
+    """
+    settings = get_settings()
+
+    try:
+        from openai import OpenAI
+
+        oai = OpenAI(api_key=settings.openai_api_key)
+        resp = oai.chat.completions.create(
+            model=settings.llm_model,
+            response_format={"type": "json_object"},
+            messages=[
+                {
+                    "role": "developer",
+                    "content": (
+                        "You are an expert LaTeX editor assistant embedded in a scientific-document IDE. "
+                        "The user will give you their current LaTeX source and a request. "
+                        "Return ONLY a JSON object with exactly two keys:\n"
+                        '  "reply" – a brief, helpful natural-language explanation of what you did or your answer.\n'
+                        '  "latex" – the FULL updated LaTeX document source. If the user only asked a question '
+                        "and no edits are needed, return the original LaTeX unchanged.\n\n"
+                        "Rules:\n"
+                        "- Preserve the user's existing content unless they explicitly ask to change it.\n"
+                        "- When adding content, place it in the most logical location.\n"
+                        "- Keep the LaTeX valid and compilable.\n"
+                        "- Do NOT wrap the JSON in markdown code fences."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"## Current LaTeX source\n```latex\n{body.latex}\n```\n\n"
+                        f"## Request\n{body.message}"
+                    ),
+                },
+            ],
+            max_completion_tokens=settings.llm_max_completion_tokens,
+        )
+
+        raw = (resp.choices[0].message.content or "").strip()
+
+        # Parse the JSON response from the LLM
+        try:
+            parsed = json.loads(raw)
+            reply = parsed.get("reply", "Done.")
+            new_latex = parsed.get("latex", body.latex)
+        except json.JSONDecodeError:
+            # If the model didn't return valid JSON, treat the whole response
+            # as a text reply and leave the LaTeX unchanged.
+            reply = raw
+            new_latex = body.latex
+
+        return ChatResponse(reply=reply, latex=new_latex)
+
+    except Exception as exc:
+        logger.exception("Chat endpoint failed")
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 # ── Serve the built Vite frontend (production) ──────────────────────

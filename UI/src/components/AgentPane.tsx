@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 
-const API_BASE = import.meta.env.VITE_AGENT_API_URL || 'http://localhost:8000';
+// Empty string in production (Docker) → same-origin; dev → local backend
+const API_BASE = import.meta.env.VITE_AGENT_API_URL ?? (import.meta.env.DEV ? 'http://localhost:8000' : '');
 
 /* ── Response types (match the FastAPI schemas) ─────────────────────── */
 

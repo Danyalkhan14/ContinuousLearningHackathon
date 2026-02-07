@@ -457,6 +457,65 @@ body {
   color: var(--accent);
 }
 
+.ai-input-inner button:disabled,
+.ai-input-inner input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Chat messages ─────────────────────────────────────────────────── */
+.chat-messages {
+  max-height: 180px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.chat-msg {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.chat-msg-user {
+  background: rgba(88, 166, 255, 0.08);
+  align-self: flex-end;
+}
+
+.chat-msg-assistant {
+  background: var(--bg-tertiary);
+  align-self: flex-start;
+}
+
+.chat-msg-role {
+  font-weight: 600;
+  flex-shrink: 0;
+  color: var(--accent);
+  min-width: 24px;
+}
+
+.chat-msg-assistant .chat-msg-role {
+  color: #3fb950;
+}
+
+.chat-msg-text {
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.chat-typing {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 /* Preview pane */
 .preview-pane {
   width: var(--preview-width);

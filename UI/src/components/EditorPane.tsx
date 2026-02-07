@@ -1,4 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+
+// Empty string in production (Docker) → same-origin; dev → local backend
+const API_BASE = import.meta.env.VITE_AGENT_API_URL ?? (import.meta.env.DEV ? 'http://localhost:8000' : '');
 
 const ToolsIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -43,6 +46,11 @@ const SendIcon = () => (
   </svg>
 );
 
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 const DEFAULT_LATEX = [
   '\\documentclass{article}',
   '\\begin{document}',
@@ -75,8 +83,11 @@ export default function EditorPane({ value, onChange }: EditorPaneProps) {
   const [aiQuery, setAiQuery] = useState('');
   const [fileName, setFileName] = useState('main.tex');
   const [draggingOver, setDraggingOver] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   /* ── Read a text file and load it into the editor ──────────────── */
   const loadFile = useCallback(
@@ -136,14 +147,66 @@ export default function EditorPane({ value, onChange }: EditorPaneProps) {
     [loadFile],
   );
 
+  // Auto-scroll chat to the latest message
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages, chatLoading]);
+
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!aiQuery.trim()) return;
-      // Placeholder: in a full app this would call an API
+      const msg = aiQuery.trim();
+      if (!msg || chatLoading) return;
+
+      // Optimistic: show the user message immediately
+      setChatMessages((prev) => [...prev, { role: 'user', content: msg }]);
       setAiQuery('');
+      setChatLoading(true);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg, latex: value }),
+        });
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          const errMsg = body?.detail || res.statusText || 'Request failed';
+          setChatMessages((prev) => [
+            ...prev,
+            { role: 'assistant', content: `Error: ${errMsg}` },
+          ]);
+          return;
+        }
+
+        const data = await res.json();
+        setChatMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: data.reply },
+        ]);
+
+        // If the AI updated the LaTeX, apply it
+        if (data.latex && data.latex !== value) {
+          onChange(data.latex);
+        }
+      } catch (err) {
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: `Error: ${
+              err instanceof Error
+                ? err.message
+                : `Could not reach the API at ${API_BASE}`
+            }`,
+          },
+        ]);
+      } finally {
+        setChatLoading(false);
+      }
     },
-    [aiQuery],
+    [aiQuery, chatLoading, value, onChange],
   );
 
   return (
@@ -202,6 +265,26 @@ export default function EditorPane({ value, onChange }: EditorPaneProps) {
           spellCheck={false}
         />
         <div className="ai-input-wrap">
+          {/* Chat messages */}
+          {chatMessages.length > 0 && (
+            <div className="chat-messages">
+              {chatMessages.map((m, i) => (
+                <div key={i} className={`chat-msg chat-msg-${m.role}`}>
+                  <span className="chat-msg-role">
+                    {m.role === 'user' ? 'You' : 'AI'}
+                  </span>
+                  <span className="chat-msg-text">{m.content}</span>
+                </div>
+              ))}
+              {chatLoading && (
+                <div className="chat-msg chat-msg-assistant">
+                  <span className="chat-msg-role">AI</span>
+                  <span className="chat-msg-text chat-typing">Thinking...</span>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="ai-input-inner">
             <button type="button" className="ai-icon" title="Attach">
               <GalleryIcon />
@@ -210,13 +293,14 @@ export default function EditorPane({ value, onChange }: EditorPaneProps) {
               type="text"
               value={aiQuery}
               onChange={(e) => setAiQuery(e.target.value)}
-              placeholder="Ask anything"
+              placeholder="Ask anything about your document..."
               aria-label="Ask AI"
+              disabled={chatLoading}
             />
             <button type="button" className="ai-icon" title="Voice">
               <WaveIcon />
             </button>
-            <button type="submit" title="Send">
+            <button type="submit" title="Send" disabled={chatLoading}>
               <SendIcon />
             </button>
           </form>
